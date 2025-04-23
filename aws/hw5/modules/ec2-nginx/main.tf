@@ -3,6 +3,11 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "subnet_id" {
+  description = "ID of the subnet to launch EC2 instance in"
+  type        = string
+}
+
 variable "list_of_open_ports" {
   description = "List of ports to open in the security group"
   type        = list(number)
@@ -31,24 +36,10 @@ resource "aws_security_group" "allow_ports" {
   }
 }
 
-data "aws_subnet" "public" {
-  filter {
-    name   = "vpc-id"
-    values = [var.vpc_id]
-  }
-
-  filter {
-    name   = "map-public-ip-on-launch"
-    values = ["true"]
-  }
-
-  availability_zone = "eu-central-1a"
-}
-
 resource "aws_instance" "public_ec2" {
-  ami           = "ami-0d8d11821a1c1678b"  # Amazon Linux 2023 AMI
+  ami           = "ami-0d8d11821a1c1678b"  # Amazon Linux 2023
   instance_type = "t2.micro"
-  subnet_id     = data.aws_subnet.public.id
+  subnet_id     = var.subnet_id
   security_groups = [aws_security_group.allow_ports.id]
 
   user_data = <<-EOF
@@ -62,6 +53,10 @@ resource "aws_instance" "public_ec2" {
   tags = {
     Name = "Public EC2 with Nginx"
   }
+}
+
+output "instance_ip" {
+  value = aws_instance.public_ec2.public_ip
 }
 
 output "instance_ip" {
