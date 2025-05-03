@@ -1,0 +1,59 @@
+---
+- name: Deploy Docker and Nginx on Amazon Linux 2023
+  hosts: web
+  become: yes
+
+  tasks:
+    - name: Check for curl-minimal
+      command: rpm -q curl-minimal
+      register: curl_minimal_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Remove curl-minimal if present
+      yum:
+        name: curl-minimal
+        state: absent
+      when: curl_minimal_check.rc == 0
+
+    - name: Install dependencies
+      yum:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+          - curl
+        state: present
+        disable_excludes: all
+
+    - name: Add Docker repository
+      shell: |
+        dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+        sed -i 's/\$releasever/8/g' /etc/yum.repos.d/docker-ce.repo
+      args:
+        executable: /bin/bash
+
+    - name: Install Docker packages
+      yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        enablerepo: docker-ce-stable
+        disable_excludes: all
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Run Nginx container
+      command: docker run -d -p 80:80 --name nginx --restart unless-stopped nginx:latest
