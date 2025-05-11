@@ -1,0 +1,58 @@
+pipeline {
+    agent {
+        label 'worker'
+    }
+
+    environment {
+        DOCKER_CREDENTIALS = credentials('docker-hub')
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                script {
+                    echo 'Pulling code from GitHub...'
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: 'https://github.com/vesk18/stepproject2/']]])
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo 'Building Docker image...'
+                    sh 'docker build -t vesk18/step2-app .'
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo 'Running tests...'
+                    sh 'docker run --entrypoint= -t -d vesk18/step2-app npm test'
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    echo 'Pushing Docker image to Docker Hub...'
+                    sh "echo \$DOCKER_CREDENTIALS_PSW | docker login -u \$DOCKER_CREDENTIALS_USR --password-stdin"
+                    sh 'docker tag vesk18/step2-app vesk18/step2-app:latest'
+                    sh 'docker push vesk18/step2-app:latest'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}
