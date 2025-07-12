@@ -7,8 +7,8 @@ route:
 receivers:
   - name: 'telegram'
     telegram_configs:
-      - bot_token: "7922160067:AAFkAVpWAQSEKmuXC5ORFKOhlF1RQ3lAyfU"
-        chat_id: 6805062908
+      - bot_token: #token
+        chat_id: #chatid
         message: |
           🔥 {{ .Status }}: {{ .CommonLabels.alertname }}
           🖥️ Instance: {{ .CommonLabels.instance }}
