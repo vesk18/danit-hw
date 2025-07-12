@@ -1,0 +1,27 @@
+groups:
+  - name: basic-alerts
+    rules:
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) < 0.15
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "🔻 Мало свободного места (<15%) на {{ $labels.instance }}"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "🔥 Высокая загрузка CPU на {{ $labels.instance }}"
+
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔴 Target {{ $labels.instance }} недоступен"
